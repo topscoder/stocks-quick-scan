@@ -22,6 +22,39 @@ function parseNumber(value: string | null | undefined): number {
   return parseFloat(value) || 0;
 }
 
+export async function searchSymbol(keyword: string): Promise<
+  Array<{ symbol: string; name: string }>
+> {
+  // Retrieve the API key from localStorage, or handle no key
+  const key = localStorage.getItem("alphaVantageApiKey");
+  if (!key) {
+    console.warn("No API key in localStorage. Search won't work.");
+    return [];
+  }
+
+  if (!keyword) return [];
+
+  try {
+    const ALPHA_VANTAGE_BASE_URL = "https://www.alphavantage.co/query";
+    const response = await fetch(
+      `${ALPHA_VANTAGE_BASE_URL}?function=SYMBOL_SEARCH&keywords=${keyword}&apikey=${key}`
+    );
+    const data = await response.json();
+
+    if (data.bestMatches) {
+      return data.bestMatches.map((match: any) => ({
+        symbol: match["1. symbol"],
+        name: match["2. name"],
+      }));
+    } else {
+      return [];
+    }
+  } catch (error) {
+    console.error("Symbol search failed:", error);
+    return [];
+  }
+}
+
 /**
  * ---------------
  * NEW! Quick Scan Score Calculation
@@ -203,8 +236,8 @@ export async function fetchFullStockData(symbol: string): Promise<StockData | nu
     const parsedCash = cfReports.slice(0, 5).map(parseCashFlow);
 
     // OPTIONAL: compute FCF/Sales ratio
-    const withFcfRatio = parsedCash.map((cf) => {
-      const inc = parsedIncome.find((i) => i.year === cf.year);
+    const withFcfRatio = parsedCash.map((cf: CashFlow) => {
+      const inc = parsedIncome.find((i: IncomeStatement) => i.year === cf.year);
       const revenue = inc?.totalRevenue || 0;
       const fcfSalesRatio = revenue ? (cf.freeCashFlow / revenue) * 100 : 0;
       return { ...cf, fcfSalesRatio };

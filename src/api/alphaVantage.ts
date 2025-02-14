@@ -146,7 +146,72 @@ function calculateQuickScanScore(
   if (totalIntervals > 0) {
     score = (pointsEarned / totalIntervals) * 100;
   }
+
+  // Round to nearest integer
+  score = Math.round(score);
+  
   return score;
+}
+
+// Add a mock data function to quickly return a `StockData` object
+function getMockStockData(): StockData {
+  // Provide 5-year sample data. The 'year' values can be arbitrary for testing.
+  const incomeStatements: IncomeStatement[] = [
+    { year: 2019, totalRevenue: 500, netIncome: 40, profitMargin: (40/500)*100 },
+    { year: 2020, totalRevenue: 550, netIncome: 45, profitMargin: (45/550)*100 },
+    { year: 2021, totalRevenue: 600, netIncome: 60, profitMargin: (60/600)*100 },
+    { year: 2022, totalRevenue: 700, netIncome: 80, profitMargin: (80/700)*100 },
+    { year: 2023, totalRevenue: 800, netIncome: 100, profitMargin: (100/800)*100 },
+  ];
+
+  const balanceSheets: BalanceSheet[] = [
+    { year: 2019, totalAssets: 2000, totalLiabilities: 800, debtRatio: 800/2000 },
+    { year: 2020, totalAssets: 2200, totalLiabilities: 900, debtRatio: 900/2200 },
+    { year: 2021, totalAssets: 2500, totalLiabilities: 1000, debtRatio: 1000/2500 },
+    { year: 2022, totalAssets: 2700, totalLiabilities: 1000, debtRatio: 1000/2700 },
+    { year: 2023, totalAssets: 3000, totalLiabilities: 1100, debtRatio: 1100/3000 },
+  ];
+
+  const cashFlows: CashFlow[] = [
+    { year: 2019, freeCashFlow: 50 },
+    { year: 2020, freeCashFlow: 60 },
+    { year: 2021, freeCashFlow: 70 },
+    { year: 2022, freeCashFlow: 80 },
+    { year: 2023, freeCashFlow: 90 },
+  ].map(cf => {
+    // optionally compute fcfSalesRatio
+    const inc = incomeStatements.find(i => i.year === cf.year);
+    const revenue = inc?.totalRevenue || 0;
+    const fcfSalesRatio = revenue ? (cf.freeCashFlow / revenue) * 100 : 0;
+    return { ...cf, fcfSalesRatio };
+  });
+
+  // Compute the quickScanScore with your real function
+  const quickScanScore = calculateQuickScanScore(incomeStatements, balanceSheets, cashFlows);
+
+  return {
+    overview: {
+      symbol: "TEST",
+      name: "Mock Testing Inc.",
+      currentPrice: 123.45, // any static number
+    },
+    incomeStatements,
+    balanceSheets,
+    cashFlows,
+    valuation: {
+      dividendPerShare: 1.25,
+      sharesIssued: 1_000_000,
+      peRatio: 15,
+    },
+    analysis: {
+      quickScanScore,
+      returnPotentialScore: 65,
+      minReturn3Y: 5,
+      avgReturn3Y: 10,
+      maxReturn3Y: 20,
+      valuationIndicator: "Fairly Valued",
+    },
+  };
 }
 
 /**
@@ -158,9 +223,15 @@ function calculateQuickScanScore(
  * - Cash Flow
  */
 export async function fetchFullStockData(symbol: string): Promise<StockData | null> {
-  try {
-    if (!symbol) return null;
+  // 1) Check if it's the "TEST" symbol (case-insensitive)
+  if (!symbol) return null;
+  if (symbol.toUpperCase() === "TEST") {
+    // Return immediately with mock data
+    return getMockStockData();
+  }
 
+  try {
+    // 2) Otherwise, do your real alpha vantage logic
     const apiKey = getApiKey();
 
     /** 1) Fetch Overview */

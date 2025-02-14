@@ -48,6 +48,17 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSelectSymbol }) => {
   const handleKeyDown = async (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
+
+      // 1) If the user typed "TEST", bypass everything
+      if (query.toUpperCase() === "TEST") {
+        onSelectSymbol("TEST"); // triggers the mock data route
+        // Clear results or keep them empty
+        setResults([]);
+        setShowDropdown(false);
+        return;
+      }
+
+      // 2) Normal search flow
       if (!query.trim()) {
         setResults([]);
         setShowDropdown(false);
@@ -93,6 +104,7 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSelectSymbol }) => {
         onKeyDown={handleKeyDown}
         className="border border-gray-300 rounded px-3 py-2 w-full"
       />
+
       {showDropdown && results.length > 0 && (
         <ul className="absolute left-0 right-0 bg-white border border-gray-200 rounded shadow mt-1 max-h-48 overflow-y-auto z-10">
           {results.map((item) => (
